@@ -35,14 +35,121 @@ def generate_pdf_preflight():
     return ('', 204)
 
 ACCENT_DEFAULTS = {
-    'creativo': '#0F6E5C',
-    'tecnico': '#1F7A8C',
-    'riflesso': '#6D5DBB',
+    'creativo': '#0F6E5C', 'tecnico': '#1F7A8C', 'riflesso': '#6D5DBB',
+    'modern': '#2451B8', 'fascia': '#8E3B6F', 'timeline': '#3D8361', 'junior': '#FF6B5B',
+    'servizio': '#2E9E83', 'sviluppo': '#4A5A70', 'rivista': '#C0327A', 'portfolio': '#7C3AED',
+    'elegante': '#8A6D2F', 'ats': '#000000',
 }
+DEFAULT_INK_ACCENT = '#1B1F3B'  # classic, minimal, compatto, executive, accademico, consulenza
+# Sfondo di default della sidebar e lato della pagina, fedeli al file originale (app.html):
+# Creativo è scuro con testo bianco, Tecnico e Riflesso sono chiari con testo scuro,
+# Riflesso ha la sidebar a DESTRA — non è solo una questione di colore, cambia il layout.
 SIDEBAR_DEFAULTS = {
     'creativo': {'color': '#1B1F3B', 'side': 'left',  'dark': True},
     'tecnico':  {'color': '#EAF1F3', 'side': 'left',  'dark': False},
     'riflesso': {'color': '#EFEDF7', 'side': 'right', 'dark': False},
+}
+
+# Configurazione per i 16 template a colonna singola: nessuno di questi ha bisogno della
+# sidebar ricorrente (niente CSS Grid/float coinvolto, il flusso normale si spezza bene tra
+# le pagine da solo) — solo differenze di font, colori e piccoli dettagli decorativi, fedeli
+# al CSS originale di app.html per ciascuno.
+SINGLE_COLUMN_STYLES = {
+    'classic':   {'body': '', 'css': ''},
+    'modern':    {'body': '', 'css': '''
+        h1{ color: var(--accent); }
+        h2{ background: var(--accent); color: #fff; padding: 3pt 10pt; border-radius: 4pt; display: inline-block; border: none; }
+        .chip{ background: #EAF0FC; color: var(--accent); }
+    '''},
+    'minimal':   {'body': '', 'css': '''
+        h1{ font-weight: 600; border-bottom: 2pt solid var(--accent); padding-bottom: 3pt; display: inline-block; }
+        h2{ border: none; font-size: 9pt; letter-spacing: .1em; text-transform: uppercase; color: #63677A; }
+        .chip{ background: transparent; border: 1pt solid #DAD7CE; }
+    '''},
+    'elegante':  {'body': "font-family:'Fraunces',serif; background:#FFFDF8;", 'css': '''
+        .identity-block{ text-align: center; }
+        h1{ font-size: 24pt; }
+        h2{ border-bottom: 1pt solid var(--accent); color: var(--accent); font-family:'Helvetica','Arial',sans-serif; text-align: center; }
+    '''},
+    'compatto':  {'body': 'font-size:9.5pt; line-height:1.35;', 'css': '''
+        body{ border-left: 5pt solid var(--accent); }
+        .main{ padding-left: 16pt; }
+        h1{ font-size: 16pt; }
+        h2{ font-size: 8.5pt; padding: 2pt 6pt; border: none; background: #F1EFE8; display: inline-block; border-radius: 2pt; }
+        .entry{ margin-bottom: 6pt; }
+    '''},
+    'fascia':    {'body': '', 'css': '''
+        .banner{ height: 60pt; background: var(--accent); margin: -14mm -10mm 0; }
+        .photo{ margin: -34pt auto 8pt; border: 3pt solid #fff; position: relative; }
+        .identity-block{ text-align: center; }
+        h2{ border-bottom-color: var(--accent); color: var(--accent); }
+        .chip{ background: color-mix(in srgb, var(--accent) 12%, #F1EFE8); }
+    '''},
+    'timeline':  {'body': '', 'css': '''
+        h1{ color: var(--accent); }
+        h2{ border-bottom-color: var(--accent); }
+        .sec-exp, .sec-edu{ position: relative; }
+        .entry{ position: relative; padding-left: 16pt; }
+        .entry::before{
+            content: ""; position: absolute; left: 0; top: 3pt; width: 7pt; height: 7pt;
+            border-radius: 50%; background: var(--accent); border: 1.5pt solid #fff; box-shadow: 0 0 0 1pt var(--accent);
+        }
+    '''},
+    'ats':       {'body': 'color:#000;', 'css': '''
+        h1, h2{ color: #000; }
+        .role, .muted{ color: #444; }
+        h2{ border-bottom-color: #000; font-size: 10pt; letter-spacing: .03em; text-transform: uppercase; }
+        .chip{ background: none; border: none; padding: 0; border-radius: 0; color: #000; }
+        .chip:not(:last-child)::after{ content: " ·"; }
+    '''},
+    'executive': {'body': "font-family:'Fraunces',serif; background:#FDFCF9;", 'css': '''
+        .identity-block{ border-bottom: 4pt double var(--accent); padding-bottom: 10pt; margin-bottom: 4pt; }
+        h1{ font-size: 19pt; letter-spacing: .04em; text-transform: uppercase; }
+        .role{ font-family:'Helvetica','Arial',sans-serif; text-transform: uppercase; letter-spacing: .12em; font-size: 8pt; }
+        h2{ border-top: 1pt solid var(--accent); border-bottom: 1pt solid var(--accent); padding: 4pt 0; font-family:'Helvetica','Arial',sans-serif; }
+    '''},
+    'junior':    {'body': '', 'css': '''
+        h2{ border: none; }
+        h2::before{ content: ""; display: inline-block; width: 6pt; height: 6pt; border-radius: 50%; background: var(--accent); margin-right: 6pt; }
+        .chip{ background: var(--accent); color: #fff; border-radius: 10pt; }
+    '''},
+    'accademico':{'body': "font-family:'Fraunces',serif;", 'css': '''
+        h1{ font-size: 20pt; }
+        .role{ font-style: italic; }
+        h2{ font-family:'Helvetica','Arial',sans-serif; font-weight: 600; font-size: 9pt; letter-spacing: .08em; text-transform: uppercase; border-bottom: 1pt solid var(--accent); }
+    '''},
+    'consulenza':{'body': 'padding:0;', 'css': '''
+        .photo{ display: none; }
+        .identity-block{ background: var(--accent); color: #fff; padding: 20pt 26pt; }
+        .role{ color: rgba(255,255,255,.75); }
+        .main{ padding: 0 26pt 20pt; counter-reset: section-count; }
+        h2{ border: none; font-weight: 700; counter-increment: section-count; }
+        h2::before{ content: counter(section-count, decimal-leading-zero) " — "; color: var(--accent); }
+    '''},
+    'portfolio': {'body': '', 'css': '''
+        h1{ font-size: 28pt; letter-spacing: -.02em; }
+        .role{ color: var(--accent); font-weight: 600; }
+        h2{ font-size: 14pt; border: none; font-weight: 700; }
+        .chip{ background: var(--accent); color: #fff; font-weight: 600; }
+    '''},
+    'servizio':  {'body': '', 'css': '''
+        .entry{ background: #F1EFE8; border-radius: 6pt; padding: 8pt 10pt; }
+        h2{ border: none; }
+        h2::before{ content: ""; display: inline-block; width: 7pt; height: 7pt; border-radius: 50%; background: var(--accent); margin-right: 6pt; }
+        .chip{ background: var(--accent); color: #fff; border-radius: 10pt; }
+    '''},
+    'sviluppo':  {'body': '', 'css': '''
+        h2{ font-family:'Courier New',Courier,monospace; border: none; color: var(--accent); }
+        h2::before{ content: "// "; color: #63677A; }
+        .entry{ border-left: 2pt solid var(--accent); padding-left: 10pt; }
+        .chip{ background: #1B1F3B; color: #7EE7C7; font-family:'Courier New',monospace; border-radius: 2pt; }
+    '''},
+    'rivista':   {'body': '', 'css': '''
+        h1{ font-size: 22pt; text-transform: uppercase; }
+        .role{ font-size: 10pt; text-transform: uppercase; letter-spacing: .1em; color: #63677A; }
+        .sec-summary{ background: #F1EFE8; border-left: 3pt solid var(--accent); padding: 10pt 14pt; font-style: italic; }
+        h2{ font-size: 14pt; font-weight: 800; border: none; border-bottom: 3pt solid var(--accent); display: inline-block; }
+    '''},
 }
 
 
@@ -190,11 +297,106 @@ def build_html(data):
 </body></html>'''
 
 
+def build_single_column_html(data):
+    """CV a colonna singola: nessun trucco di impaginazione necessario (niente CSS Grid o
+    elementi ricorrenti), il flusso normale del documento si spezza bene tra le pagine da
+    solo — motivo per cui questi 16 template non avevano il bug delle sidebar a due colonne."""
+    template = data.get('template', 'classic')
+    style = SINGLE_COLUMN_STYLES.get(template, SINGLE_COLUMN_STYLES['classic'])
+    accent = data.get('accentColor') or ACCENT_DEFAULTS.get(template, DEFAULT_INK_ACCENT)
+
+    name = escape(data.get('name', ''))
+    role = escape(data.get('role', ''))
+    contact_parts = [p for p in [data.get('email'), data.get('phone'), data.get('city')] if p]
+    contact = ' &middot; '.join(escape(p) for p in contact_parts)
+
+    skills_html = ''.join(f'<span class="chip">{escape(s)}</span>' for s in data.get('skills', []))
+    langs_html = ''.join(
+        f'<div class="lang-row"><span>{escape(l.get("name",""))}</span>'
+        f'<span>{escape(l.get("level",""))}</span></div>'
+        for l in data.get('languages', [])
+    )
+    exp_html = ''
+    for e in data.get('experiences', []):
+        header = escape(e.get('role', '')) + (' — ' + escape(e.get('org', '')) if e.get('org') else '')
+        period = escape(e.get('period', ''))
+        text = escape(e.get('improved') or e.get('raw') or '')
+        exp_html += f'''
+        <div class="entry">
+          <div class="entry-top"><strong>{header}</strong><span class="period">{period}</span></div>
+          <p>{text}</p>
+        </div>'''
+    edu_html = ''
+    for e in data.get('educations', []):
+        edu_html += f'''
+        <div class="entry">
+          <div class="entry-top"><strong>{escape(e.get("title",""))}</strong><span class="period">{escape(e.get("period",""))}</span></div>
+          <p class="muted">{escape(e.get("school",""))}</p>
+        </div>'''
+
+    # Consulenza nasconde la foto (fedele all'originale); Fascia la vuole sopra un banner colorato.
+    show_photo = data.get('photoDataUrl') and template != 'consulenza'
+    photo_html = f'<img class="photo" src="{data["photoDataUrl"]}">' if show_photo else ''
+    banner_html = '<div class="banner"></div>' if template == 'fascia' else ''
+
+    extra_css = style['css'].replace('var(--accent)', accent)
+    body_extra = style['body'].replace('var(--accent)', accent)
+
+    return f'''<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  @page {{ size: A4; margin: 14mm 10mm; }}
+  body {{ font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10.5pt; color: #1B1F3B; margin: 0; {body_extra} }}
+  .entry, .chip {{ page-break-inside: avoid; }}
+  .photo{{ width: 20mm; height: 20mm; border-radius: 50%; object-fit: cover; display: block; margin-bottom: 8pt; }}
+  h1{{ font-size: 16pt; margin: 0 0 3pt; overflow-wrap: break-word; }}
+  .role{{ color: #63677A; margin-bottom: 3pt; }}
+  .cv-contact{{ color: #63677A; font-size: 9.5pt; margin-bottom: 10pt; overflow-wrap: break-word; }}
+  h2{{
+    font-size: 10pt; text-transform: uppercase; letter-spacing: .04em; color: {accent};
+    border-bottom: 1pt solid {accent}; padding-bottom: 2pt; margin: 12pt 0 6pt;
+  }}
+  .chip{{ display: inline-block; background: #F1EFE8; border-radius: 8pt; padding: 2pt 8pt; margin: 0 3pt 3pt 0; font-size: 9pt; overflow-wrap: break-word; }}
+  .entry{{ margin-bottom: 8pt; }}
+  .entry-top{{ display: flex; justify-content: space-between; font-size: 10pt; }}
+  .period{{ color: #63677A; font-size: 9pt; }}
+  .muted{{ color: #63677A; }}
+  .lang-row{{ display: flex; flex-wrap: wrap; justify-content: space-between; font-size: 9.5pt; margin-bottom: 3pt; gap: 2pt 8pt; }}
+  {extra_css}
+</style></head>
+<body>
+  {banner_html}
+  <div class="identity-block">
+    {photo_html}
+    <h1>{name}</h1>
+    <p class="role">{role}</p>
+    <p class="cv-contact">{contact}</p>
+  </div>
+  <div class="main">
+    <div class="cv-section sec-summary"><h2>Profilo</h2><p>{escape(data.get("summary", ""))}</p></div>
+    <div class="cv-section sec-exp"><h2>Esperienze</h2>{exp_html}</div>
+    <div class="cv-section sec-edu"><h2>Istruzione</h2>{edu_html}</div>
+    <div class="cv-section"><h2>Competenze</h2>{skills_html}</div>
+    <div class="cv-section"><h2>Lingue</h2>{langs_html}</div>
+  </div>
+</body></html>'''
+
+
+def generate_cv_html(data):
+    """Smista tra le due tecniche secondo il template scelto: i tre a sidebar (Creativo,
+    Tecnico, Riflesso) usano l'elemento ricorrente; tutti gli altri 16 usano il flusso a
+    colonna singola, molto più semplice perché non hanno il bug da aggirare."""
+    template = data.get('template', 'classic')
+    if template in SIDEBAR_DEFAULTS:
+        return build_html(data)
+    return build_single_column_html(data)
+
+
 @app.route('/generate-pdf', methods=['POST'])
 def generate_pdf():
     try:
         data = request.get_json(force=True)
-        html_string = build_html(data)
+        html_string = generate_cv_html(data)
         pdf_bytes = HTML(string=html_string).write_pdf()
         filename = (data.get('name', 'CV').strip().replace(' ', '_') or 'CV') + '.pdf'
         return send_file(
