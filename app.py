@@ -197,19 +197,24 @@ def escape(s):
 
 
 def build_html(data):
+    """Costruisce l'HTML+CSS del CV a partire dai dati inviati dal client.
+    Riusabile indipendentemente dalla piattaforma serverless scelta."""
     template = data.get('template', 'creativo')
     accent = data.get('accentColor') or ACCENT_DEFAULTS.get(template, '#0F6E5C')
 
+    # Larghezza sidebar personalizzabile. Minimo alzato a 30mm dopo un test reale: con 26mm
+    # persino le intestazioni fisse ("Competenze") si spezzavano a metà parola, e "Lingue"
+    # arrivava a sovrapporsi al livello indicato — non un compromesso accettabile.
+    # 55mm come massimo per non lasciare la colonna principale troppo stretta a sua volta.
     sidebar_width = data.get('sidebarWidth', 32)
     try:
         sidebar_width = float(sidebar_width)
     except (TypeError, ValueError):
         sidebar_width = 32
     sidebar_width = max(30, min(55, sidebar_width))
-
     defaults = SIDEBAR_DEFAULTS.get(template, SIDEBAR_DEFAULTS['tecnico'])
     sidebar_color = data.get('sidebarColor') or defaults['color']
-    sidebar_side = defaults['side']
+    sidebar_side = defaults['side']  # 'left' o 'right': non personalizzabile via dati, è identità del template
     sidebar_dark = defaults['dark'] if not data.get('sidebarColor') else _is_dark_color(data['sidebarColor'])
     text_color = '#FFFFFF' if sidebar_dark else '#1B1F3B'
     muted_color = 'rgba(255,255,255,.75)' if sidebar_dark else '#63677A'
@@ -219,9 +224,13 @@ def build_html(data):
     role = escape(data.get('role', ''))
 
     contact_parts = [p for p in [data.get('email'), data.get('phone'), data.get('city')] if p]
+    if data.get('license'):
+        contact_parts.append('Patente ' + data['license'])
     contact = ' &middot; '.join(escape(p) for p in contact_parts)
 
-    skills_html = ''.join(f'<span class="chip">{escape(s)}</span>' for s in data.get('skills', []))
+    skills_html = ''.join(
+        f'<span class="chip">{escape(s)}</span>' for s in data.get('skills', [])
+    )
     langs_html = ''.join(
         f'<div class="lang-row"><span>{escape(l.get("name",""))}</span>'
         f'<span>{escape(l.get("level",""))}</span></div>'
@@ -262,22 +271,34 @@ def build_html(data):
     {margin_box} {{ content: element(sidebar); margin: 0; padding: 0; }}
   }}
   body {{ font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10.5pt; color: #1B1F3B; margin: 0; }}
+
+  /* Sidebar RICORRENTE: vedi commento in cima al file. position:running() la toglie dal
+     flusso normale e la registra come contenuto della casella di margine (a sinistra o a
+     destra secondo il template — Riflesso è a destra, fedele all'originale) che il motore
+     ripete identica su ogni pagina generata. Larghezza e colore sono personalizzabili
+     (sidebarWidth in mm, sidebarColor); se l'utente sceglie un colore, il testo passa
+     automaticamente bianco o scuro secondo la luminanza, per restare leggibile. */
   .sidebar{{
     position: running(sidebar);
     width: {sidebar_width}mm; background: {sidebar_color}; color: {text_color};
     padding: 14mm 6mm; box-sizing: border-box; height: 297mm;
-    overflow-wrap: break-word; word-break: break-word;
+    overflow-wrap: break-word; word-break: break-word; /* niente testo che esce dal riquadro, qualunque sia la larghezza */
   }}
   .main{{ padding: 14mm 10mm; box-sizing: border-box; }}
+
   .entry, .chip {{ page-break-inside: avoid; }}
+
   .photo{{ width: 20mm; height: 20mm; border-radius: 50%; object-fit: cover; display: block; margin-bottom: 8mm; }}
   h1{{ font-size: 18pt; margin: 0 0 2mm; overflow-wrap: break-word; color: #1B1F3B; }}
   .role{{ color: #63677A; margin-bottom: 4mm; }}
+  /* Intestazioni nella sidebar: colore accento, bordo tenue adattato a sfondo chiaro/scuro
+     (fedele all'originale: nel Creativo il bordo è bianco semitrasparente, non l'accento). */
   .sidebar h2{{
     font-size: 10pt; text-transform: uppercase; letter-spacing: .04em; color: {accent};
     border-bottom: 1pt solid {sidebar_border_color}; padding-bottom: 1mm; margin: 6mm 0 3mm;
     white-space: nowrap;
   }}
+  /* Intestazioni nel corpo principale: testo scuro, bordo dell'accento — fedeli all'originale. */
   .main h2{{
     font-size: 10pt; text-transform: uppercase; letter-spacing: .04em; color: #1B1F3B;
     border-bottom: 1pt solid {accent}; padding-bottom: 1mm; margin: 6mm 0 3mm;
@@ -292,27 +313,28 @@ def build_html(data):
   .muted{{ color: #63677A; }}
   .sidebar p, .sidebar .lang-row {{ color: {text_color}; }}
   .sidebar .lang-row span:last-child {{ color: {muted_color}; }}
-  .lang-row{{ display: flex; flex-wrap: wrap; justify-content: space-between; font-size: 9.5pt; margin-bottom: 2mm; gap: 1mm 4pt; }}
+  .lang-row{{
+    display: flex; flex-wrap: wrap; justify-content: space-between; font-size: 9.5pt;
+    margin-bottom: 2mm; gap: 1mm 4pt;
+    /* flex-wrap:wrap invece che nowrap: se nome lingua + livello non ci stanno affiancati,
+       il livello va a capo sotto invece di sovrapporsi al nome (bug reale visto in test) */
+  }}
+
 </style></head>
 <body>
   <div class="sidebar">
     {photo_html}
     <h2>Contatti</h2>
     <p style="font-size:9pt;">{contact}</p>
-    <h2>Competenze</h2>
-    {skills_html}
-    <h2>Lingue</h2>
-    {langs_html}
+    {'<h2>Competenze</h2>' + skills_html if skills_html else ''}
+    {'<h2>Lingue</h2>' + langs_html if langs_html else ''}
   </div>
   <div class="main">
     <h1>{name}</h1>
     <p class="role">{role}</p>
-    <h2>Profilo</h2>
-    <p>{escape(data.get("summary", ""))}</p>
-    <h2>Esperienze</h2>
-    {exp_html}
-    <h2>Istruzione</h2>
-    {edu_html}
+    {'<h2>Profilo</h2><p>' + escape(data.get("summary", "")) + '</p>' if data.get("summary") else ''}
+    {'<h2>Esperienze</h2>' + exp_html if exp_html else ''}
+    {'<h2>Istruzione</h2>' + edu_html if edu_html else ''}
   </div>
 </body></html>'''
 
@@ -328,6 +350,8 @@ def build_single_column_html(data):
     name = escape(data.get('name', ''))
     role = escape(data.get('role', ''))
     contact_parts = [p for p in [data.get('email'), data.get('phone'), data.get('city')] if p]
+    if data.get('license'):
+        contact_parts.append('Patente ' + data['license'])
     contact = ' &middot; '.join(escape(p) for p in contact_parts)
 
     skills_html = ''.join(f'<span class="chip">{escape(s)}</span>' for s in data.get('skills', []))
@@ -364,6 +388,19 @@ def build_single_column_html(data):
     )
     body_extra = style['body'].replace('var(--accent)', accent)
 
+    summary_text = escape(data.get('summary', ''))
+    sections_html = ''
+    if summary_text:
+        sections_html += f'<div class="cv-section sec-summary"><h2>Profilo</h2><p>{summary_text}</p></div>'
+    if exp_html:
+        sections_html += f'<div class="cv-section sec-exp"><h2>Esperienze</h2>{exp_html}</div>'
+    if edu_html:
+        sections_html += f'<div class="cv-section sec-edu"><h2>Istruzione</h2>{edu_html}</div>'
+    if skills_html:
+        sections_html += f'<div class="cv-section"><h2>Competenze</h2>{skills_html}</div>'
+    if langs_html:
+        sections_html += f'<div class="cv-section"><h2>Lingue</h2>{langs_html}</div>'
+
     return f'''<!doctype html>
 <html><head><meta charset="utf-8">
 <style>
@@ -375,7 +412,7 @@ def build_single_column_html(data):
   .role{{ color: #63677A; margin-bottom: 3pt; }}
   .cv-contact{{ color: #63677A; font-size: 9.5pt; margin-bottom: 10pt; overflow-wrap: break-word; }}
   h2{{
-    font-size: 10pt; text-transform: uppercase; letter-spacing: .04em; color: {accent};
+    font-size: 10pt; color: {accent};
     border-bottom: 1pt solid {accent}; padding-bottom: 2pt; margin: 12pt 0 6pt;
   }}
   .chip{{ display: inline-block; background: #F1EFE8; border-radius: 8pt; padding: 2pt 8pt; margin: 0 3pt 3pt 0; font-size: 9pt; overflow-wrap: break-word; }}
@@ -395,11 +432,7 @@ def build_single_column_html(data):
     <p class="cv-contact">{contact}</p>
   </div>
   <div class="main">
-    <div class="cv-section sec-summary"><h2>Profilo</h2><p>{escape(data.get("summary", ""))}</p></div>
-    <div class="cv-section sec-exp"><h2>Esperienze</h2>{exp_html}</div>
-    <div class="cv-section sec-edu"><h2>Istruzione</h2>{edu_html}</div>
-    <div class="cv-section"><h2>Competenze</h2>{skills_html}</div>
-    <div class="cv-section"><h2>Lingue</h2>{langs_html}</div>
+    {sections_html}
   </div>
 </body></html>'''
 
