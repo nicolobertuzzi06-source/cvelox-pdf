@@ -83,7 +83,7 @@ SINGLE_COLUMN_STYLES = {
         .photo{ margin: -34pt auto 8pt; border: 3pt solid #fff; position: relative; }
         .identity-block{ text-align: center; }
         h2{ border-bottom-color: var(--accent); color: var(--accent); }
-        .chip{ background: color-mix(in srgb, var(--accent) 12%, #F1EFE8); }
+        .chip{ background: var(--fascia-chip-bg); }
     '''},
     'timeline':  {'body': '', 'css': '''
         h1{ color: var(--accent); }
@@ -153,7 +153,27 @@ SINGLE_COLUMN_STYLES = {
 }
 
 
+def _mix_color(hex_color, base_hex, weight_pct):
+    """Mescola un colore con uno sfondo di base in Python (non con color-mix() in CSS, una
+    funzione recente che non sono certo sia supportata da WeasyPrint e non ho potuto
+    verificare) — così il risultato è sempre un colore esadecimale semplice, comprensibile da
+    qualunque motore CSS senza scommesse."""
+    def to_rgb(h):
+        h = h.lstrip('#')
+        return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+    r1, g1, b1 = to_rgb(hex_color)
+    r2, g2, b2 = to_rgb(base_hex)
+    w = weight_pct / 100
+    r = round(r1 * w + r2 * (1 - w))
+    g = round(g1 * w + g2 * (1 - w))
+    b = round(b1 * w + b2 * (1 - w))
+    return f'#{r:02X}{g:02X}{b:02X}'
+
+
 def _is_dark_color(hex_color):
+    """Vero se un colore è abbastanza scuro da richiedere testo bianco sopra, secondo la
+    luminanza percepita — così un colore di sfondo scelto liberamente dall'utente non finisce
+    mai con testo scuro sopra sfondo scuro (o viceversa), illeggibile."""
     h = hex_color.lstrip('#')
     if len(h) == 3:
         h = ''.join(c * 2 for c in h)
@@ -339,7 +359,9 @@ def build_single_column_html(data):
     photo_html = f'<img class="photo" src="{data["photoDataUrl"]}">' if show_photo else ''
     banner_html = '<div class="banner"></div>' if template == 'fascia' else ''
 
-    extra_css = style['css'].replace('var(--accent)', accent)
+    extra_css = style['css'].replace('var(--accent)', accent).replace(
+        'var(--fascia-chip-bg)', _mix_color(accent, '#F1EFE8', 12)
+    )
     body_extra = style['body'].replace('var(--accent)', accent)
 
     return f'''<!doctype html>
