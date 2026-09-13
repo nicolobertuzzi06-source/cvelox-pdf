@@ -14,6 +14,26 @@ import io
 
 app = Flask(__name__)
 
+
+@app.after_request
+def add_cors_headers(response):
+    # app.html gira su un dominio diverso da questo servizio (es. cvelox.netlify.app vs
+    # questo servizio Render): senza queste intestazioni, il browser blocca la richiesta per
+    # sicurezza (CORS) prima ancora che arrivi qui — non è un errore visibile, la richiesta
+    # semplicemente fallisce in silenzio lato client.
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    return response
+
+
+@app.route('/generate-pdf', methods=['OPTIONS'])
+def generate_pdf_preflight():
+    # Il browser manda prima una richiesta "OPTIONS" di verifica (preflight) per le richieste
+    # POST con corpo JSON da un altro dominio: deve ricevere una risposta vuota ma con le
+    # intestazioni CORS sopra, altrimenti blocca la vera richiesta POST che segue.
+    return ('', 204)
+
 ACCENT_DEFAULTS = {
     'creativo': '#0F6E5C',
     'tecnico': '#1F7A8C',
