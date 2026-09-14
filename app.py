@@ -538,7 +538,7 @@ def build_print_overrides(template, sidebar_width_px=None):
     manca, usa lo stesso 190px di default del CSS originale."""
     base = """
         @page { size: A4; margin: 0; }
-        body { margin: 0; }
+        html, body { margin: 0; background: #fff !important; }
         .cv-page {
             width: 100% !important; max-width: none !important; min-height: 0 !important;
             box-shadow: none !important;
