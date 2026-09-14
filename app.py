@@ -561,6 +561,13 @@ def build_print_overrides(template, sidebar_width_px=None):
         .cv-page.{template} {{ display: block !important; }}
         .cv-page.{template} .cv-sidebar {{
             position: running(sidebar) !important;
+            height: 297mm !important;
+        }}
+        .cv-page.{template} .cv-main {{
+            display: flex !important; flex-direction: column !important; min-height: 297mm !important;
+        }}
+        .cv-page.{template} .cv-main .sec-signature {{
+            margin-top: auto !important;
         }}
     """
 
