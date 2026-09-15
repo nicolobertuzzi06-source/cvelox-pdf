@@ -75,6 +75,12 @@ REAL_CV_CSS = \
   .brand .badge-mini{font-size:10.5px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:2px 8px;margin-left:6px;}
   .top-actions{display:flex;gap:12px;align-items:center;}
   .account-area{display:flex;gap:12px;align-items:center;font-size:13px;}
+  .account-menu-trigger{display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;font-size:13px;color:var(--ink);padding:6px 4px;}
+  .account-dropdown{display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--white);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 28px -12px rgba(27,31,59,.25);min-width:180px;padding:6px;z-index:50;}
+  .account-dropdown.open{display:block;}
+  .account-dropdown-item{display:block;width:100%;text-align:left;background:none;border:none;padding:9px 10px;border-radius:6px;font-size:13.5px;cursor:pointer;color:var(--ink);}
+  .account-dropdown-item:hover{background:var(--paper-dim);}
+  .account-dropdown-divider{height:1px;background:var(--line);margin:6px 2px;}
   .account-area .account-email{color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .progress-pill{
     font-size:12.5px;color:var(--muted);background:var(--paper-dim);
@@ -153,7 +159,7 @@ REAL_CV_CSS = \
     align-items:center;position:sticky;top:61px;
     height:calc(100vh - 61px);overflow:auto;
   }
-  .accent-picker{display:flex;gap:9px;align-items:center;margin-bottom:14px;width:100%;max-width:600px;}
+  .accent-picker{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:14px;width:100%;max-width:600px;}
   .accent-picker .accent-label{font-size:12px;color:var(--muted);margin-right:2px;}
   .accent-dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--white);box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0;}
   .accent-dot.active{box-shadow:0 0 0 2px var(--ink);}
@@ -269,13 +275,24 @@ REAL_CV_CSS = \
 
   /* ---------- CV RENDER (shared by builder + gallery thumbnails) ---------- */
   .cv-page{
-    background:var(--white);width:100%;max-width:600px;min-height:420px;
+    background:var(--white);width:100%;max-width:600px;min-height:420px;flex-shrink:0;
+    overflow-wrap:break-word;word-break:break-word;
     padding:52px 48px;box-shadow:0 20px 50px -28px rgba(27,31,59,.35);
     position:relative;font-size:14px;line-height:1.5;color:#22263F;
     display:flex;flex-direction:column;
   }
   .cv-page .cv-photo{width:76px;height:76px;border-radius:50%;object-fit:cover;order:0;}
   .cv-page .cv-identity{order:1;}
+  .page-break-marker{
+    position:absolute;left:0;right:0;height:0;
+    border-top:2px dashed var(--danger);
+    pointer-events:none;z-index:20;
+  }
+  .page-break-label{
+    position:absolute;top:-11px;right:0;
+    background:var(--danger);color:#fff;font-size:10.5px;font-weight:600;
+    padding:2px 8px;border-radius:0 0 0 6px;white-space:nowrap;
+  }
   .cv-page .cv-name{font-size:28px;font-weight:700;font-family:'Space Grotesk',sans-serif;}
   .cv-page .cv-role{color:var(--muted);font-size:14.5px;margin-top:2px;}
   .cv-page .cv-contact{color:var(--muted);font-size:13px;margin-top:6px;order:2;}
@@ -287,11 +304,13 @@ REAL_CV_CSS = \
   .cv-page .sec-summary{order:3;} .cv-page .sec-exp{order:var(--order-exp, 4);} .cv-page .sec-edu{order:var(--order-edu, 5);}
   .cv-page .sec-skills{order:6;} .cv-page .sec-lang{order:7;} .cv-page .sec-cert{order:8;} .cv-page .sec-hobbies{order:9;} .cv-page .sec-signature{order:10;}
   .cv-page .cv-entry{margin-bottom:14px;}
-  .cv-page .cv-entry .top{display:flex;justify-content:space-between;font-weight:600;font-size:14px;}
+  .cv-page .cv-entry .top{display:flex;justify-content:space-between;font-weight:600;font-size:14px;gap:10px;}
+  .cv-page .cv-entry .top span:first-child{flex:1;min-width:0;overflow-wrap:break-word;word-break:break-word;}
+  .cv-page .cv-entry .top span:last-child{flex-shrink:0;white-space:nowrap;}
   .cv-page .cv-entry .sub{color:var(--muted);font-size:12.5px;margin-bottom:4px;}
-  .cv-page .cv-entry ul{margin-left:16px;margin-top:4px;}
+  .cv-page .cv-entry ul, .cv-page #p-hobbies ul{margin-left:16px;margin-top:4px;}
   .cv-page .chips-preview{display:flex;flex-wrap:wrap;gap:6px;}
-  .cv-page .skill-chip{background:var(--paper-dim);padding:4px 10px;border-radius:20px;font-size:12.5px;}
+  .cv-page .skill-chip{background:var(--paper-dim);padding:4px 10px;border-radius:20px;font-size:12.5px;max-width:100%;overflow-wrap:break-word;word-break:break-word;display:inline-block;}
   .cv-page.no-photo .cv-photo{display:none;}
 
   /* Classico — supporto colore accento opzionale */
@@ -322,7 +341,9 @@ REAL_CV_CSS = \
   .cv-page.compatto .cv-entry{margin-bottom:8px;}
 
   /* Creativo — sidebar layout, overrides the flex/order system with a grid */
-  .cv-page.creativo{display:grid;grid-template-columns:190px 1fr;padding:0;grid-template-areas:"side main";}
+  .cv-page.creativo{display:grid;grid-template-columns:var(--sidebar-width, 190px) 1fr;padding:0;grid-template-areas:"side main";}
+  .cv-sidebar{overflow-wrap:break-word;word-break:break-word;min-width:0;}
+  .contact-text{flex:1;min-width:0;overflow-wrap:break-word;word-break:break-word;}
   .cv-page.creativo .cv-sidebar{grid-area:side;background:var(--ink);color:#fff;padding:32px 20px;display:flex;flex-direction:column;gap:20px;}
   .cv-page.creativo .cv-main{grid-area:main;padding:32px 30px;display:flex;flex-direction:column;gap:20px;}
   .cv-page.creativo .cv-photo{order:0;border:3px solid var(--accent-user, var(--accent-creative));}
@@ -337,13 +358,13 @@ REAL_CV_CSS = \
   .cv-page.creativo .cv-main .cv-section h3{color:var(--ink);border-bottom-color:var(--accent-user, var(--accent-creative));}
 
   /* Tecnico — sidebar chiara + timeline a pallini + barre lingua */
-  .cv-page.tecnico{display:grid;grid-template-columns:190px 1fr;padding:0;}
+  .cv-page.tecnico{display:grid;grid-template-columns:var(--sidebar-width, 190px) 1fr;padding:0;}
   .cv-page.tecnico .cv-sidebar{background:#EAF1F3;padding:30px 22px;display:flex;flex-direction:column;gap:20px;}
   .cv-page.tecnico .cv-main{padding:34px 34px 34px 30px;border-left:2px solid #DCE7E9;display:flex;flex-direction:column;gap:4px;}
   .cv-page.tecnico .cv-photo{order:0;width:96px;height:96px;margin:0 auto;border:3px solid #fff;box-shadow:0 0 0 2px #DCE7E9;}
   .cv-page.tecnico .cv-contact{order:0;font-size:12px;color:#3E5B60;line-height:2;}
   .cv-page.tecnico .cv-contact .contact-line{display:flex;gap:6px;align-items:center;}
-  .cv-page.tecnico .cv-contact .contact-line::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent-user, var(--accent-tecnico));flex-shrink:0;}
+  .cv-page.tecnico .cv-contact .contact-line .contact-icon{display:inline-flex;flex-shrink:0;color:var(--accent-user, var(--accent-tecnico));}
   .cv-page.tecnico .sec-summary,.cv-page.tecnico .sec-skills,.cv-page.tecnico .sec-lang,.cv-page.tecnico .sec-cert{order:0;margin-top:0;}
   .cv-page.tecnico .cv-sidebar h3{color:var(--accent-user, var(--accent-tecnico));border-bottom:1px solid #D2E0E3;font-size:11.5px;}
   .cv-page.tecnico .cv-sidebar .skill-chip{background:#DCEAEC;color:#265E68;}
@@ -358,11 +379,13 @@ REAL_CV_CSS = \
   .cv-page.tecnico .sec-lang .chips-preview{display:block;}
   .cv-page.tecnico .lang-row{margin-bottom:10px;}
   .cv-page.tecnico .lang-row .lang-label{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin-bottom:3px;}
+  .cv-page.tecnico .lang-row .lang-label span:first-child{flex:1;min-width:0;overflow-wrap:break-word;word-break:break-word;}
+  .cv-page.tecnico .lang-row .lang-label span:last-child{flex-shrink:0;}
 
   /* Fascia foto — banner colorato full-width con foto tonda a cavallo del bordo */
-  .cv-page.fascia{padding-top:170px;position:relative;}
-  .cv-page.fascia::before{content:"";position:absolute;top:0;left:0;right:0;height:130px;background:var(--accent-user, var(--accent-fascia));}
-  .cv-page.fascia .cv-photo{position:relative;z-index:1;margin:-96px auto 0;display:block;border:4px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.18);}
+  .cv-page.fascia{padding-top:calc(var(--banner-height, 130px) + 40px);position:relative;}
+  .cv-page.fascia::before{content:"";position:absolute;top:0;left:0;right:0;height:var(--banner-height, 130px);background:var(--accent-user, var(--accent-fascia));}
+  .cv-page.fascia .cv-photo{position:relative;z-index:1;margin:calc(-0.74 * var(--banner-height, 130px)) auto 0;display:block;border:4px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.18);}
   .cv-page.fascia .cv-identity,.cv-page.fascia .cv-contact{position:relative;z-index:1;text-align:center;}
   .cv-page.fascia .cv-section h3{border-bottom-color:var(--accent-user, var(--accent-fascia));color:var(--accent-user, var(--accent-fascia));}
   .cv-page.fascia .skill-chip{background:color-mix(in srgb, var(--accent-user, var(--accent-fascia)) 12%, var(--paper-dim));}
@@ -370,13 +393,15 @@ REAL_CV_CSS = \
   .cv-page.fascia.no-photo::before{height:66px;}
 
   /* Riflesso — stessa struttura del Tecnico (sidebar chiara + timeline) ma specchiata a destra */
-  .cv-page.riflesso{display:grid;grid-template-columns:1fr 190px;grid-template-areas:"main side";padding:0;}
+  .cv-page.riflesso{display:grid;grid-template-columns:1fr var(--sidebar-width, 190px);grid-template-areas:"main side";padding:0;}
   .cv-page.riflesso .cv-sidebar{grid-area:side;background:#EFEDF7;padding:30px 22px;display:flex;flex-direction:column;gap:20px;}
   .cv-page.riflesso .cv-main{grid-area:main;padding:34px 30px 34px 34px;border-right:2px solid #DFDAF0;display:flex;flex-direction:column;gap:4px;}
   .cv-page.riflesso .cv-photo{order:0;width:96px;height:96px;margin:0 auto;border:3px solid #fff;box-shadow:0 0 0 2px #DFDAF0;}
   .cv-page.riflesso .cv-contact{order:0;font-size:12px;color:#4B4570;line-height:2;}
   .cv-page.riflesso .cv-contact .contact-line{display:flex;gap:6px;align-items:center;}
-  .cv-page.riflesso .cv-contact .contact-line::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent-user, var(--accent-riflesso));flex-shrink:0;}
+  .cv-page.riflesso .cv-contact .contact-line .contact-icon{display:inline-flex;flex-shrink:0;color:var(--accent-user, var(--accent-riflesso));}
+  /* Icone per tipo di contatto (email, telefono, città...) invece del semplice pallino,
+     colorate dinamicamente con mask-image: la forma SVG fa da stampino, riempito con
   .cv-page.riflesso .sec-summary,.cv-page.riflesso .sec-skills,.cv-page.riflesso .sec-lang,.cv-page.riflesso .sec-cert{order:0;margin-top:0;}
   .cv-page.riflesso .cv-sidebar h3{color:var(--accent-user, var(--accent-riflesso));border-bottom:1px solid #DFDAF0;font-size:11.5px;}
   .cv-page.riflesso .cv-sidebar .skill-chip{background:#E2DEF2;color:#463F73;}
@@ -391,6 +416,8 @@ REAL_CV_CSS = \
   .cv-page.riflesso .sec-lang .chips-preview{display:block;}
   .cv-page.riflesso .lang-row{margin-bottom:10px;}
   .cv-page.riflesso .lang-row .lang-label{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin-bottom:3px;}
+  .cv-page.riflesso .lang-row .lang-label span:first-child{flex:1;min-width:0;overflow-wrap:break-word;word-break:break-word;}
+  .cv-page.riflesso .lang-row .lang-label span:last-child{flex-shrink:0;}
 
   /* Timeline centrale — colonna singola, esperienze/istruzione con pallino e linea continua */
   .cv-page.timeline .cv-name{color:var(--accent-user, var(--accent-timeline));}
@@ -484,8 +511,12 @@ REAL_CV_CSS = \
   .cv-page.format-anglo .cv-entry{margin-bottom:8px;}
   .cv-page.format-anglo{font-size:12.5px;line-height:1.35;}
 
-  .watermark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden;z-index:5;}
-  .watermark span{font-family:'Space Grotesk',sans-serif;font-size:56px;font-weight:700;color:rgba(27,31,59,.09);transform:rotate(-28deg);white-space:nowrap;}
+  .watermark{
+    position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:5;
+    background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27320%27%20height%3D%27200%27%3E%3Ctext%20x%3D%27160%27%20y%3D%27105%27%20transform%3D%27rotate%28-28%20160%20105%29%27%20font-family%3D%27Arial%2C%20sans-serif%27%20font-size%3D%2722%27%20font-weight%3D%27700%27%20fill%3D%27rgba%2827%2C31%2C59%2C0.085%29%27%20text-anchor%3D%27middle%27%3ECVELOX%20%E2%80%94%20VERSIONE%20GRATUITA%3C/text%3E%3C/svg%3E");
+    background-repeat:repeat;
+  }
+  .watermark span{display:none;}
 
   /* ---------- MODALS / PRICING ---------- */
   .modal{position:fixed;inset:0;background:rgba(27,31,59,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:20px;overflow-y:auto;}
@@ -496,7 +527,7 @@ REAL_CV_CSS = \
   .modal-card p{color:var(--muted);font-size:14px;margin-bottom:16px;}
   .modal-card .actions{display:flex;gap:10px;margin-top:18px;}
 
-  .plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0 22px;}
+  .plan-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin:18px 0 22px;}
   .plan-option{position:relative;border:1.5px solid var(--line);border-radius:12px;padding:22px 20px;cursor:pointer;background:var(--white);}
   .plan-option.selected{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink) inset;}
   .plan-option.recommended{border-color:var(--accent-modern);}
@@ -524,6 +555,11 @@ REAL_CV_CSS = \
 
   .code-toggle{margin:2px 0 16px;}
   .code-field{margin-bottom:6px;}
+  .checkout-block{border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;background:var(--paper-dim);}
+  .checkout-block label{display:block;font-size:13px;font-weight:600;margin-bottom:4px;}
+  .checkout-block input:not([type="checkbox"]), .checkout-block select{width:100%;margin-top:4px;}
+  .checkout-block .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
+  @media (max-width:560px){ .checkout-block .row2{grid-template-columns:1fr;} }
 
 """
 
@@ -539,11 +575,17 @@ def build_print_overrides(template, sidebar_width_px=None):
     base = """
         @page { size: A4; margin: 0; }
         html, body { margin: 0; background: #fff !important; }
+        .cv-page, .cv-page * {
+            overflow-wrap: break-word !important;
+            word-break: break-word !important;
+            min-width: 0 !important;
+        }
         .cv-page {
             width: 100% !important; max-width: none !important; min-height: 0 !important;
-            box-shadow: none !important;
+            box-shadow: none !important; transform: none !important; margin-bottom: 0 !important;
+            box-sizing: border-box !important;
         }
-        .watermark { display: none !important; }
+        .watermark, .page-break-marker { display: none !important; }
     """
     if template not in SIDEBAR_SIDE:
         return base
@@ -551,13 +593,8 @@ def build_print_overrides(template, sidebar_width_px=None):
     width = sidebar_width_px if sidebar_width_px else SIDEBAR_WIDTH_PX
     width = max(120, min(320, width))  # stessi limiti ragionevoli dello slider in app.html
     side = SIDEBAR_SIDE[template]
-    margin_side = 'left' if side == 'left' else 'right'
-    page_margin = f"0 0 0 {width}px" if side == 'left' else f"0 {width}px 0 0"
+    opposite = 'right' if side == 'left' else 'left'
     return base + f"""
-        @page {{
-            margin: {page_margin};
-            @{margin_side}-top {{ content: element(sidebar); margin: 0; padding: 0; }}
-        }}
         .cv-page.{template} {{ display: block !important; }}
         .cv-page.{template} .cv-sidebar, .cv-page.{template} .cv-sidebar *{{
             overflow-wrap: break-word !important;
@@ -565,11 +602,16 @@ def build_print_overrides(template, sidebar_width_px=None):
             min-width: 0 !important;
             max-width: 100% !important;
         }}
+        /* Sidebar con FLOAT invece di elemento ricorrente: compare una sola volta, dove il
+           suo contenuto finisce naturalmente — non si ripete sulle pagine successive. */
         .cv-page.{template} .cv-sidebar {{
-            position: running(sidebar) !important;
-            height: 297mm !important;
+            float: {side} !important;
+            width: {width}px !important;
+            height: 296mm !important;
+            box-sizing: border-box !important;
         }}
         .cv-page.{template} .cv-main {{
+            margin-{side}: {width}px !important;
             display: flex !important; flex-direction: column !important; min-height: 297mm !important;
         }}
         .cv-page.{template} .cv-main .sec-signature {{
