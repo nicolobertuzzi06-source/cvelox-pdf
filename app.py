@@ -559,6 +559,12 @@ def build_print_overrides(template, sidebar_width_px=None):
             @{margin_side}-top {{ content: element(sidebar); margin: 0; padding: 0; }}
         }}
         .cv-page.{template} {{ display: block !important; }}
+        .cv-page.{template} .cv-sidebar, .cv-page.{template} .cv-sidebar *{{
+            overflow-wrap: break-word !important;
+            word-break: break-word !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
+        }}
         .cv-page.{template} .cv-sidebar {{
             position: running(sidebar) !important;
             height: 297mm !important;
