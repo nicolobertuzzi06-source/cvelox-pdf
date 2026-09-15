@@ -618,7 +618,10 @@ def build_print_overrides(template, sidebar_width_px=None, size_scale=1.0):
         .watermark, .page-break-marker {{ display: none !important; }}
     """
     if template not in SIDEBAR_SIDE:
-        return base
+        return base + """
+        .cv-page { min-height: 297mm !important; }
+        .cv-page .sec-signature { margin-top: auto !important; }
+        """
 
     width = sidebar_width_px if sidebar_width_px else SIDEBAR_WIDTH_PX
     width = max(120, min(320, width))  # stessi limiti ragionevoli dello slider in app.html
