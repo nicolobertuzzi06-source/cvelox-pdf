@@ -567,25 +567,55 @@ SIDEBAR_SIDE = {'creativo': 'left', 'tecnico': 'left', 'riflesso': 'right'}
 SIDEBAR_WIDTH_PX = 190  # stesso valore esatto usato in app.html per tutti e tre
 
 
-def build_print_overrides(template, sidebar_width_px=None):
+def build_print_overrides(template, sidebar_width_px=None, size_scale=1.0):
     """Regole di stampa aggiuntive: nessuna per i 16 template a colonna singola (il flusso
     normale si spezza già bene da solo), la sidebar ricorrente solo per i tre che ne hanno
     davvero bisogno. sidebar_width_px arriva dal client (l'utente può personalizzarla): se
-    manca, usa lo stesso 190px di default del CSS originale."""
-    base = """
-        @page { size: A4; margin: 0; }
-        html, body { margin: 0; background: #fff !important; }
-        .cv-page, .cv-page * {
+    manca, usa lo stesso 190px di default del CSS originale.
+    size_scale arriva dal menu "Dimensione testo": a schermo si ottiene con transform:scale()
+    calcolato per una pagina larga 600px, ma la pagina di stampa è larga quanto un vero A4 —
+    applicare la STESSA scala lì sposterebbe il contenuto fuori dal margine destro (il bug
+    segnalato). La correzione: comprimiamo la larghezza in proporzione inversa PRIMA di
+    ingrandire con la scala, così il risultato finale (larghezza compressa × scala) torna
+    sempre a occupare esattamente la larghezza della pagina, qualunque sia la dimensione
+    scelta — non ignoriamo più la scelta dell'utente, la applichiamo in modo che funzioni.
+    """
+    try:
+        size_scale = float(size_scale)
+    except (TypeError, ValueError):
+        size_scale = 1.0
+    if not size_scale or size_scale <= 0:
+        size_scale = 1.0
+
+    if abs(size_scale - 1.0) > 0.001:
+        compensated_width = 100 / size_scale
+        size_css = f"""
+        .cv-page {{
+            width: {compensated_width}% !important;
+            transform: scale({size_scale}) !important;
+            transform-origin: top left !important;
+            margin-bottom: 0 !important;
+        }}
+        """
+    else:
+        size_css = """
+        .cv-page { width: 100% !important; transform: none !important; margin-bottom: 0 !important; }
+        """
+
+    base = f"""
+        @page {{ size: A4; margin: 0; }}
+        html, body {{ margin: 0; background: #fff !important; }}
+        .cv-page, .cv-page * {{
             overflow-wrap: break-word !important;
             word-break: break-word !important;
             min-width: 0 !important;
-        }
-        .cv-page {
-            width: 100% !important; max-width: none !important; min-height: 0 !important;
-            box-shadow: none !important; transform: none !important; margin-bottom: 0 !important;
-            box-sizing: border-box !important;
-        }
-        .watermark, .page-break-marker { display: none !important; }
+        }}
+        .cv-page {{
+            max-width: none !important; min-height: 0 !important;
+            box-shadow: none !important; box-sizing: border-box !important;
+        }}
+        {size_css}
+        .watermark, .page-break-marker {{ display: none !important; }}
     """
     if template not in SIDEBAR_SIDE:
         return base
@@ -620,8 +650,8 @@ def build_print_overrides(template, sidebar_width_px=None):
     """
 
 
-def build_pdf_html(cv_page_html, template, sidebar_width_px=None):
-    print_css = build_print_overrides(template, sidebar_width_px)
+def build_pdf_html(cv_page_html, template, sidebar_width_px=None, size_scale=1.0):
+    print_css = build_print_overrides(template, sidebar_width_px, size_scale)
     return f"""<!doctype html>
 <html><head><meta charset="utf-8">
 <style>
@@ -639,9 +669,10 @@ def generate_pdf():
         cv_page_html = data.get('cvPageHTML', '')
         template = data.get('template', 'classic')
         sidebar_width_px = data.get('sidebarWidth')
+        size_scale = data.get('sizeScale', 1.0)
         if not cv_page_html:
             return jsonify({'error': 'cvPageHTML mancante'}), 400
-        html_string = build_pdf_html(cv_page_html, template, sidebar_width_px)
+        html_string = build_pdf_html(cv_page_html, template, sidebar_width_px, size_scale)
         pdf_bytes = HTML(string=html_string).write_pdf()
         filename = (data.get('name', 'CV').strip().replace(' ', '_') or 'CV') + '.pdf'
         return send_file(
