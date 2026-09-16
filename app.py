@@ -564,6 +564,15 @@ REAL_CV_CSS = \
 """
 
 SIDEBAR_SIDE = {'creativo': 'left', 'tecnico': 'left', 'riflesso': 'right'}
+# Padding reale di .cv-main per ciascun modello (da app.html: creativo 32px 30px, tecnico
+# 34px 34px 34px 30px, riflesso 34px 30px 34px 34px) — serve per allineare la firma ancorata
+# in fondo pagina allo stesso margine del resto del contenuto, invece di farla toccare il
+# bordo estremo della colonna.
+MAIN_PADDING = {
+    'creativo': {'bottom': 32, 'left': 30, 'right': 30},
+    'tecnico':  {'bottom': 34, 'left': 30, 'right': 34},
+    'riflesso': {'bottom': 34, 'left': 34, 'right': 30},
+}
 SIDEBAR_WIDTH_PX = 190  # stesso valore esatto usato in app.html per tutti e tre
 
 
@@ -619,8 +628,11 @@ def build_print_overrides(template, sidebar_width_px=None, size_scale=1.0):
     """
     if template not in SIDEBAR_SIDE:
         return base + """
-        .cv-page { min-height: 297mm !important; }
-        .cv-page .sec-signature { margin-top: auto !important; }
+        .cv-page { position: relative !important; min-height: 297mm !important; padding-bottom: 90px !important; }
+        .cv-page .sec-signature {
+            position: absolute !important; bottom: 40px !important; left: 48px !important; right: 48px !important;
+            margin: 0 !important;
+        }
         """
 
     width = sidebar_width_px if sidebar_width_px else SIDEBAR_WIDTH_PX
@@ -645,10 +657,15 @@ def build_print_overrides(template, sidebar_width_px=None, size_scale=1.0):
         }}
         .cv-page.{template} .cv-main {{
             margin-{side}: {width}px !important;
-            display: flex !important; flex-direction: column !important; min-height: 297mm !important;
+            position: relative !important; min-height: 297mm !important;
+            box-sizing: border-box !important;
+            padding-bottom: {MAIN_PADDING[template]['bottom'] + 40}px !important;
         }}
         .cv-page.{template} .cv-main .sec-signature {{
-            margin-top: auto !important;
+            position: absolute !important; margin: 0 !important;
+            bottom: {MAIN_PADDING[template]['bottom']}px !important;
+            left: {MAIN_PADDING[template]['left']}px !important;
+            right: {MAIN_PADDING[template]['right']}px !important;
         }}
     """
 
